@@ -1,82 +1,21 @@
 package main
 
 import (
-	"net"
 	"fmt"
 	"net/http"
 	"io/ioutil"
-	"encoding/xml"
 	"time"
 
 	"github.com/gorilla/mux"
 	"log"
 	"encoding/json"
 	"golang.org/x/net/websocket"
+
+	"github.com/laurent35240/denon/device"
 )
 
-type Denon struct {
-	host string
-	conn net.Conn
-}
 
-func (denon *Denon) connect() {
-	conn, err := net.Dial("tcp", denon.host + ":23")
-	if err != nil {
-		fmt.Printf("Error connecting to denon system: %v", err)
-	}
-	denon.conn = conn
-}
-
-func (denon *Denon) sendCmd(cmd string)  {
-	if (denon.conn == nil) {
-		denon.connect()
-	}
-	cmdForConn := cmd + "\r"
-	fmt.Fprint(denon.conn, cmdForConn)
-	fmt.Printf("Command %s sent\n", cmd)
-}
-
-func (denon *Denon) powerOn()  {
-	denon.sendCmd("PWON")
-}
-
-func (denon *Denon) powerOff()  {
-	denon.sendCmd("PWSTANDBY")
-}
-
-func (denon *Denon) getStatus(c chan string)  {
-	resp, err := http.Get("http://" + denon.host + "/goform/formMainZone_MainZoneXmlStatus.xml")
-	if err != nil {
-		fmt.Printf("Error getting status: %v", err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("Error while reading status body: %v", err)
-	}
-
-	type Result struct {
-		XMLName xml.Name `xml:"item"`
-		PowerState string `xml:"Power>value"`
-	}
-	result := Result{PowerState: "unknown"}
-	err = xml.Unmarshal(body, &result)
-	if err != nil {
-		fmt.Printf("Error while parsing xml: %v", err)
-	}
-	fmt.Printf("Power status: %s\n", result.PowerState)
-	c <- result.PowerState
-}
-
-func (denon *Denon) showStatus()  {
-	c:= make(chan string)
-	for {
-		go denon.getStatus(c)
-		time.Sleep(100 * time.Millisecond)
-	}
-}
-
-var denon  = Denon{host: "192.168.1.9"}
+var denon  = device.Denon{Host: "192.168.1.9"}
 
 func handlePower(w http.ResponseWriter, r *http.Request)  {
 	type PowerState struct {
@@ -100,9 +39,9 @@ func handlePower(w http.ResponseWriter, r *http.Request)  {
 	fmt.Printf("Power state received: %s", powerState.State)
 	switch {
 	case powerState.State == "ON":
-		denon.powerOn()
+		denon.PowerOn()
 	case powerState.State == "OFF":
-		denon.powerOff()
+		denon.PowerOff()
 	}
 	fmt.Fprint(w, "OK")
 }
@@ -111,7 +50,7 @@ func WsServer(ws *websocket.Conn)  {
 	ws.Write([]byte("Connected"))
 	c:= make(chan string)
 	for {
-		go denon.getStatus(c)
+		go denon.GetStatus(c)
 		ws.Write([]byte( <- c))
 		time.Sleep(100 * time.Millisecond)
 	}
