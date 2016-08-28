@@ -1,3 +1,10 @@
+var ws = new WebSocket('ws://localhost:8080/ws');
+ws.onmessage = function (evt)
+{
+    var received_msg = evt.data;
+    console.log(received_msg);
+};
+
 class Power extends React.Component {
     constructor() {
         super();
