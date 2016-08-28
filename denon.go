@@ -10,6 +10,7 @@ import (
 	"log"
 	"encoding/json"
 	"golang.org/x/net/websocket"
+	"github.com/rs/cors"
 
 	"github.com/laurent35240/denon/device"
 )
@@ -60,5 +61,9 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/power", handlePower).Methods("PUT")
 	router.Handle("/ws", websocket.Handler(WsServer))
-	log.Fatal(http.ListenAndServe(":8080", router))
+	c := cors.New(cors.Options{
+		AllowedMethods: []string{"GET", "POST", "PUT"},
+	})
+	handler := c.Handler(router)
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }

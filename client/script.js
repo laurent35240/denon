@@ -6,9 +6,9 @@ class Power extends React.Component {
     handleClick() {
         fetch("http://localhost:8080/power", {
             method: "PUT",
-            body: {
+            body: JSON.stringify({
                 state: "ON"
-            }
+            })
         })
     }
     render() {
