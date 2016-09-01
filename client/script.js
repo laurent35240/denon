@@ -1,33 +1,46 @@
 var ws = new WebSocket('ws://localhost:8080/ws');
-ws.onmessage = function (evt)
-{
-    var received_msg = evt.data;
-    console.log(received_msg);
-};
 
 class Power extends React.Component {
     constructor() {
         super();
         this.handleClick = this.handleClick.bind(this);
+        this.state = {
+            "status": "ON"
+        }
     }
+
+    componentDidMount() {
+        var component = this;
+        ws.onmessage = function (evt)
+        {
+            var received_msg = evt.data;
+            component.setState({status: received_msg});
+            console.log(received_msg);
+        };
+    }
+
     handleClick() {
+        var newStatus = this.state.status == "ON" ? "OFF" : "ON";
         fetch("http://localhost:8080/power", {
             method: "PUT",
             body: JSON.stringify({
-                state: "ON"
+                state: newStatus
             })
         })
     }
+
     render() {
+        var className = (this.state.status == "ON" ? "text-success" : "text-danger");
+        className = className + " glyphicon glyphicon-off";
         return (
             <a href="#" className="btn btn-lg btn-default" onClick={this.handleClick}>
-                <span className="text-success glyphicon glyphicon-off" aria-label="power"></span>
+                <span className={className} aria-label="power"></span>
             </a>
         );
     }
 }
 
 ReactDOM.render(
-<Power name="World" />,
+<Power initialStatus="ON" />,
     document.getElementById('container')
 );
