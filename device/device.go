@@ -59,7 +59,6 @@ func (denon *Denon) GetStatus(c chan string)  {
 	if err != nil {
 		fmt.Printf("Error while parsing xml: %v", err)
 	}
-	fmt.Printf("Power status: %s\n", result.PowerState)
 	c <- result.PowerState
 }
 

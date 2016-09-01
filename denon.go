@@ -50,9 +50,15 @@ func handlePower(w http.ResponseWriter, r *http.Request)  {
 func WsServer(ws *websocket.Conn)  {
 	ws.Write([]byte("Connected"))
 	c:= make(chan string)
+	var status, oldStatus string
 	for {
 		go denon.GetStatus(c)
-		ws.Write([]byte( <- c))
+		status = <- c
+		if status != oldStatus {
+			ws.Write([]byte(status))
+			fmt.Printf("Status %s sent through WS\n", status)
+			oldStatus = status
+		}
 		time.Sleep(100 * time.Millisecond)
 	}
 }
